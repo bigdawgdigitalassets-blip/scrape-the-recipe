@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Just The Recipe — Clean, Printable Recipes Instantly</title>
+    <meta name="description" content="Paste any recipe link and get just the recipe — no life stories, no popups, no ads. Clean and ready to print.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Tokens ── */
+        :root {
+            --ink:        #1a1a18;
+            --ink-soft:   #4a4a46;
+            --ink-muted:  #8a8a82;
+            --parchment:  #faf8f3;
+            --cream:      #f2ede3;
+            --rule:       #e0d9cc;
+            --sage:       #5a7a5a;
+            --sage-light: #eaf2ea;
+            --sage-dark:  #3d5c3d;
+            --error-bg:   #fdf2f2;
+            --error:      #b91c1c;
+            --radius:     8px;
+        }
+
+        /* ── Reset ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ── Base ── */
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--parchment);
+            color: var(--ink);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── Ad zones ── */
+        .ad-zone {
+            width: 100%;
+            background: var(--cream);
+            border-bottom: 1px solid var(--rule);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 90px;
+            color: var(--ink-muted);
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .ad-zone.bottom {
+            border-top: 1px solid var(--rule);
+            border-bottom: none;
+            margin-top: 60px;
+        }
+
+        /* ── Page layout ── */
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        /* ── Header ── */
+        header {
+            padding: 48px 0 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--rule);
+            margin-bottom: 40px;
+        }
+
+        .wordmark {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 2.4rem;
+            font-weight: 600;
+            color: var(--ink);
+            letter-spacing: -0.02em;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .wordmark span {
+            color: var(--sage);
+        }
+
+        .tagline {
+            font-size: 0.95rem;
+            color: var(--ink-soft);
+            font-style: italic;
+            font-family: 'Lora', Georgia, serif;
+        }
+
+        /* ── Extractor card ── */
+        .extractor {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .extractor label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row input[type="url"] {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1.5px solid var(--rule);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--ink);
+            background: var(--parchment);
+            transition: border-color 0.15s;
+            outline: none;
+        }
+
+        .input-row input[type="url"]:focus {
+            border-color: var(--sage);
+            background: white;
+        }
+
+        .input-row input[type="url"]::placeholder {
+            color: var(--ink-muted);
+        }
+
+        .btn-extract {
+            background: var(--sage);
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: var(--radius);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-extract:hover { background: var(--sage-dark); }
+        .btn-extract:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ── Supported sites note ── */
+        .supported-note {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: var(--ink-muted);
+        }
+
+        .supported-note strong {
+            color: var(--ink-soft);
+        }
+
+        /* ── Error ── */
+        .error-box {
+            display: none;
+            background: var(--error-bg);
+            color: var(--error);
+            border: 1px solid #fca5a5;
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            margin-top: 16px;
+        }
+
+        /* ── Loading state ── */
+        .loading-bar {
+            display: none;
+            height: 3px;
+            background: var(--sage-light);
+            border-radius: 99px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .loading-bar::after {
+            content: '';
+            display: block;
+            height: 100%;
+            width: 40%;
+            background: var(--sage);
+            border-radius: 99px;
+            animation: slide 1.2s ease-in-out infinite;
+        }
+
+        @keyframes slide {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
+
+        /* ── Mid-page ad ── */
+        .ad-mid {
+            background: var(--cream);
+            border: 1px solid var(--rule);
+            border-radius: var(--radius);
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink-muted);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+        }
+
+        /* ── Recipe output ── */
+        #recipeOutput {
+            display: none;
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: var(--radius);
+            padding: 36px 40px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .recipe-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 28px;
+        }
+
+        .btn-print {
+            background: var(--ink);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .btn-print:hover { background: #333; }
+
+        .recipe-title {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--ink);
+            line-height: 1.25;
+            margin-bottom: 10px;
+        }
+
+        .recipe-meta {
+            font-size: 0.85rem;
+            color: var(--ink-muted);
+            font-style: italic;
+            margin-bottom: 28px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .recipe-meta span {
+            margin-right: 18px;
+        }
+
+        .recipe-section-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 14px;
+        }
+
+        #resIngredients {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 32px;
+        }
+
+        #resIngredients li {
+            padding: 8px 0 8px 20px;
+            position: relative;
+            border-bottom: 1px solid var(--rule);
+            font-size: 0.95rem;
+            color: var(--ink-soft);
+        }
+
+        #resIngredients li::before {
+            content: '–';
+            position: absolute;
+            left: 0;
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        #resIngredients li:last-child {
+            border-bottom: none;
+        }
+
+        #resInstructions {
+            list-style: none;
+            padding: 0;
+            counter-reset: steps;
+        }
+
+        #resInstructions li {
+            counter-increment: steps;
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--ink-soft);
+        }
+
+        #resInstructions li::before {
+            content: counter(steps);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            background: var(--sage-light);
+            color: var(--sage-dark);
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 50%;
+            margin-top: 3px;
+        }
+
+        /* ── How it works section ── */
+        .how-it-works {
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 1px solid var(--rule);
+        }
+
+        .how-it-works h2 {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--ink);
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .step-card {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .step-num {
+            font-size: 1.4rem;
+            font-family: 'Lora', Georgia, serif;
+            color: var(--sage);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .step-card p {
+            font-size: 0.85rem;
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+
+        /* ── Print styles ── */
+        @media print {
+            .ad-zone, .ad-mid, .extractor,
+            .recipe-actions, .how-it-works,
+            header .tagline, .supported-note { display: none !important; }
+
+            header { border: none; padding: 0 0 16px; margin-bottom: 16px; }
+            .wordmark { font-size: 1.2rem; }
+
+            body { background: white; }
+            .page { padding: 0; max-width: 100%; }
+
+            #recipeOutput {
+                display: block !important;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .recipe-title { font-size: 1.6rem; }
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 560px) {
+            .wordmark { font-size: 1.8rem; }
+            .input-row { flex-direction: column; }
+            #recipeOutput { padding: 24px 20px; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top ad banner -->
+<div class="ad-zone no-print">
+    <!-- Google AdSense unit goes here -->
+    Advertisement
+</div>
+
+<div class="page">
+
+    <header>
+        <div class="wordmark">Just The <span>Recipe</span></div>
+        <p class="tagline">No stories. No popups. Just the recipe.</p>
+    </header>
+
+    <!-- Extractor tool -->
+    <div class="extractor no-print">
+        <label for="recipeUrl">Paste a recipe link</label>
+        <div class="input-row">
+            <input type="url" id="recipeUrl"
+                placeholder="https://anyrecipeblog.com/chicken-soup"
+                autocomplete="off" spellcheck="false">
+            <button class="btn-extract" id="extractBtn">Get Recipe</button>
+        </div>
+        <div class="loading-bar" id="loadingBar"></div>
+        <div class="error-box" id="errorBox"></div>
+        <p class="supported-note">
+            Works with <strong>thousands of recipe sites</strong> that use standard recipe markup.
+            A small number of large publishers block automated access.
+        </p>
+    </div>
+
+    <!-- Mid-page ad (shown after result loads) -->
+    <div class="ad-mid no-print" id="adMid" style="display:none;">
+        <!-- Google AdSense unit goes here -->
+        Advertisement
+    </div>
+
+    <!-- Recipe output -->
+    <div id="recipeOutput">
+        <div class="recipe-actions no-print">
+            <button class="btn-print" onclick="window.print()">
+                🖨️ Print / Save PDF
+            </button>
+        </div>
+        <h1 id="resTitle" class="recipe-title"></h1>
+        <p id="resMeta" class="recipe-meta"></p>
+
+        <p class="recipe-section-label">Ingredients</p>
+        <ul id="resIngredients"></ul>
+
+        <p class="recipe-section-label">Instructions</p>
+        <ol id="resInstructions"></ol>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-it-works no-print">
+        <h2>How it works</h2>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-num">1</div>
+                <p>Copy the URL from any recipe page and paste it above.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">2</div>
+                <p>We strip the ads, autoplay videos, and 3,000-word life story.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">3</div>
+                <p>Print it, save it as a PDF, or just read it in peace.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bottom ad banner -->
+<div class="ad-zone bottom no-print">
+    <!-- Google AdSense unit goes here -->
+    Advertisement
+</div>
+
+<script>
+    // ── CONFIG ──────────────────────────────────────────────────────────────
+    // Replace this with your actual Vercel deployment URL after you deploy.
+    // Example: 'https://your-project-name.vercel.app'
+    const VERCEL_API_BASE = 'https://YOUR-VERCEL-PROJECT.vercel.app';
+    // ────────────────────────────────────────────────────────────────────────
+
+    const extractBtn  = document.getElementById('extractBtn');
+    const urlInput    = document.getElementById('recipeUrl');
+    const errorBox    = document.getElementById('errorBox');
+    const loadingBar  = document.getElementById('loadingBar');
+    const outputDiv   = document.getElementById('recipeOutput');
+    const adMid       = document.getElementById('adMid');
+
+    extractBtn.addEventListener('click', extractRecipe);
+    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') extractRecipe(); });
+
+    async function extractRecipe() {
+        const url = urlInput.value.trim();
+
+        // Reset UI
+        errorBox.style.display   = 'none';
+        outputDiv.style.display  = 'none';
+        adMid.style.display      = 'none';
+        loadingBar.style.display = 'none';
+
+        if (!url) { return showError('Please paste a recipe URL first.'); }
+
+        try { new URL(url); }
+        catch { return showError('That doesn\'t look like a valid URL. Make sure it starts with https://'); }
+
+        setLoading(true);
+
+        try {
+            const apiUrl  = `${VERCEL_API_BASE}/api/scrape?url=${encodeURIComponent(url)}`;
+            const res     = await fetch(apiUrl);
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Server error (${res.status})`);
+            }
+
+            const htmlText   = await res.text();
+            const recipeData = parseRecipeFromHTML(htmlText);
+
+            if (!recipeData) {
+                throw new Error(
+                    'No recipe data found on that page. This site may not use standard recipe markup, ' +
+                    'or it may block automated access. Try a different recipe site.'
+                );
+            }
+
+            renderRecipe(recipeData);
+            outputDiv.style.display = 'block';
+            adMid.style.display     = 'flex';
+            outputDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // ── Parse JSON-LD from raw HTML ─────────────────────────────────────────
+    function parseRecipeFromHTML(htmlText) {
+        const parser = new DOMParser();
+        const doc    = parser.parseFromString(htmlText, 'text/html');
+        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+
+        for (const script of scripts) {
+            try {
+                // textContent works on inert DOMParser docs; innerText does NOT
+                const json = JSON.parse(script.textContent);
+                const found = findRecipe(json);
+                if (found) return found;
+            } catch { continue; }
+        }
+        return null;
+    }
+
+    function findRecipe(obj) {
+        if (!obj) return null;
+        if (obj['@type'] === 'Recipe') return obj;
+        if (Array.isArray(obj['@type']) && obj['@type'].includes('Recipe')) return obj;
+        if (Array.isArray(obj)) {
+            for (const item of obj) {
+                const r = findRecipe(item);
+                if (r) return r;
+            }
+        }
+        if (obj['@graph'] && Array.isArray(obj['@graph'])) {
+            for (const item of obj['@graph']) {
+                const r = findRecipe(item);
+                if (r) return r;
+            }
+        }
+        return null;
+    }
+
+    // ── Render recipe into DOM ──────────────────────────────────────────────
+    function renderRecipe(data) {
+        document.getElementById('resTitle').textContent = data.name || 'Untitled Recipe';
+
+        // Meta line
+        const parts = [];
+        if (data.prepTime)  parts.push('Prep: '  + formatDuration(data.prepTime));
+        if (data.cookTime)  parts.push('Cook: '  + formatDuration(data.cookTime));
+        if (data.totalTime) parts.push('Total: ' + formatDuration(data.totalTime));
+        if (data.recipeYield) {
+            const yld = Array.isArray(data.recipeYield) ? data.recipeYield[0] : data.recipeYield;
+            parts.push('Yield: ' + yld);
+        }
+        document.getElementById('resMeta').textContent = parts.join('  ·  ');
+
+        // Ingredients
+        const ul = document.getElementById('resIngredients');
+        ul.innerHTML = '';
+        (data.recipeIngredient || []).forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+
+        // Instructions
+        const ol = document.getElementById('resInstructions');
+        ol.innerHTML = '';
+        (data.recipeInstructions || []).forEach(step => {
+            const li  = document.createElement('li');
+            const txt = extractStepText(step);
+            if (txt) { li.textContent = txt; ol.appendChild(li); }
+        });
+    }
+
+    function extractStepText(step) {
+        if (typeof step === 'string') return step.trim();
+        if (step.text) return step.text.trim();
+        if (step.itemListElement && Array.isArray(step.itemListElement)) {
+            return step.itemListElement.map(s => s.text || '').join(' ').trim();
+        }
+        return '';
+    }
+
+    // ── Format ISO 8601 duration (PT1H30M → 1 hr 30 min) ──────────────────
+    function formatDuration(iso) {
+        if (!iso) return '';
+        const h = iso.match(/(\d+)H/);
+        const m = iso.match(/(\d+)M/);
+        const parts = [];
+        if (h) parts.push(`${h[1]} hr`);
+        if (m) parts.push(`${m[1]} min`);
+        return parts.length ? parts.join(' ') : iso.replace('PT', '');
+    }
+
+    // ── UI helpers ─────────────────────────────────────────────────────────
+    function setLoading(on) {
+        extractBtn.disabled        = on;
+        extractBtn.textContent     = on ? 'Fetching…' : 'Get Recipe';
+        loadingBar.style.display   = on ? 'block' : 'none';
+    }
+
+    function showError(msg) {
+        errorBox.textContent    = msg;
+        errorBox.style.display  = 'block';
+    }
+</script>
+</body>
+</html>
